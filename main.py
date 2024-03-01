@@ -1,7 +1,11 @@
 from fastapi import FastAPI, Depends
-from .router import book_router, user_router, admin_router
-from .data import models
-from .data.database import engine
+
+from .router.book import book_router
+
+from .router.admin import admin_router
+from .router.users import user_router
+from .data.models import models
+from .database import engine
 from .auth import auth
 
 app = FastAPI()
