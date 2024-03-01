@@ -1,16 +1,25 @@
 import bcrypt
+import os
+from dotenv import load_dotenv
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, HTTPException, status
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
-from ..data.schemas import UserAuth, TokenData
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
 from typing_extensions import Annotated
 
-# to get a string like this run:
-# openssl rand -hex 32
-SECRET_KEY = "100f98adbcdecdd265c2cdb78e94737208448948ae73dcb66b35e0cb7b813a9f"
-ALGORITHM = "HS256"
+from ..data.schemas.schemas import UserAuth, TokenData
+from ..data.crud import crud
+from ..database import get_db
+
+
+load_dotenv()
+
+SECRET_KEY = os.environ.get('SECRET_KEY')
+ALGORITHM = os.environ.get('ALGORITHM')
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def create_access_token(user: UserAuth):
@@ -39,37 +48,17 @@ def validate_hash(input: str, hashed: str):
     return bcrypt.checkpw(input.encode('utf8'), hashed.encode('utf8'))
 
 
-# async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-#     credentials_exception = HTTPException(
-#         status_code=status.HTTP_401_UNAUTHORIZED,
-#         detail="Could not validate credentials",
-#         headers={"WWW-Authenticate": "Bearer"},
-#     )
-#     try:
-#         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-#         username: str = payload.get("sub")
-#         if username is None:
-#             raise credentials_exception
-#         token_data = TokenData(username=username)
-#     except JWTError:
-#         raise credentials_exception
-#     user = get_user(fake_users_db, username=token_data.username)
-#     if user is None:
-#         raise credentials_exception
-#     return user
-
-
-# async def get_current_active_user(
-#     current_user: Annotated[User, Depends(get_current_user)]
-# ):
-#     if current_user.disabled:
-#         raise HTTPException(status_code=400, detail="Inactive user")
-#     return current_user
-
-
-# async def get_current_active_admin(
-#     current_admin: Annotated[User, Depends(get_current_active_user)]
-# ):
-#     if current_admin.role != "admin":
-#         raise HTTPException(status_code=400, detail="Inactive admin")
-#     return current_admin
+async def require_authorization(token: Annotated[str, Depends(oauth2_scheme)],
+                                db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": 'Bearer'}
+    )
+    try:
+        token_data = authorize_token(token)
+    except (JWTError):
+        raise credentials_exception
+    db_user = crud.get_user_by_email(db, token_data.username)
+    if db_user is None:
+        raise credentials_exception
