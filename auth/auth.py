@@ -1,6 +1,4 @@
 import bcrypt
-import os
-from dotenv import load_dotenv
 
 from fastapi import Depends, HTTPException, status
 from datetime import datetime, timedelta
@@ -9,16 +7,13 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from typing_extensions import Annotated
 
-from ..data.schemas.schemas import UserAuth, TokenData
-from ..data.crud import crud
-from ..database import get_db
+from ..data.schemas.user_schemas import UserAuth, TokenData
+from ..data.crud import user_crud
+from ..config.db_config import get_db
+
+from ..config.env_config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
 
-load_dotenv()
-
-SECRET_KEY = os.environ.get('SECRET_KEY')
-ALGORITHM = os.environ.get('ALGORITHM')
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
@@ -59,6 +54,6 @@ async def require_authorization(token: Annotated[str, Depends(oauth2_scheme)],
         token_data = authorize_token(token)
     except (JWTError):
         raise credentials_exception
-    db_user = crud.get_user_by_email(db, token_data.username)
+    db_user = user_crud.get_user_by_email(db, token_data.username)
     if db_user is None:
         raise credentials_exception

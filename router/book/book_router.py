@@ -3,7 +3,7 @@ from datetime import date
 from fastapi import Depends, APIRouter, HTTPException
 from sqlalchemy.orm import Session
 
-from ... import database
+from ...config import db_config
 
 from ...data.crud import book_crud
 
@@ -25,7 +25,7 @@ def list_books(page: int = 1,
                limit: int = 100,
                publish_date: Union[date, None] = None,
                author: Union[str, None] = None,
-               db: Session = Depends(database.get_db)):
+               db: Session = Depends(db_config.get_db)):
     filter = {
         'publish_date': publish_date,
         'author': author
@@ -35,7 +35,8 @@ def list_books(page: int = 1,
 
 
 @router.get("/{book_id}")
-def get_book(book_id: int, db: Session = Depends(database.get_db)):
+def get_book(book_id: int,
+             db: Session = Depends(db_config.get_db)):
     db_book = book_crud.get_book(db, book_id)
     if not db_book:
         raise HTTPException(status_code=404, detail="Book not found")
@@ -43,7 +44,8 @@ def get_book(book_id: int, db: Session = Depends(database.get_db)):
 
 
 @router.post("/", response_model=book_schemas.BookDetail)
-def create_book(book: book_schemas.BookCreate, db: Session = Depends(database.get_db)):
+def create_book(book: book_schemas.BookCreate,
+                db: Session = Depends(db_config.get_db)):
     try:
         db_book = book_crud.create_book(db, book)
     except book_crud.RecordExistedException as e:
@@ -53,7 +55,7 @@ def create_book(book: book_schemas.BookCreate, db: Session = Depends(database.ge
 
 @router.put("/{book_id}", response_model=book_schemas.BookDetail)
 def update_book(book_id: int, book: book_schemas.BookUpdate,
-                db: Session = Depends(database.get_db)):
+                db: Session = Depends(db_config.get_db)):
     try:
         db_book = book_crud.update_book(db, book_id, book)
     except book_crud.RecordNotFoundException as e:
@@ -64,7 +66,7 @@ def update_book(book_id: int, book: book_schemas.BookUpdate,
 
 
 @router.delete("/{book_id}")
-def delete_book(book_id: int, db: Session = Depends(database.get_db)):
+def delete_book(book_id: int, db: Session = Depends(db_config.get_db)):
     try:
         book_crud.delete_book(db, book_id)
     except book_crud.RecordNotFoundException as e:

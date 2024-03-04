@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Date
 from sqlalchemy.types import Boolean, DECIMAL
 
-from ...database import Base
+from ...config.db_config import Base
 
 
 class Book(Base):

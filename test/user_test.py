@@ -1,13 +1,14 @@
+import sys
+
 from fastapi.testclient import TestClient
 from datetime import timedelta
+
 from .. import main
 from ..data.schemas import schemas
 from ..router import router
-# import data.schemas
 from ..data.models import models
 from .set_up_test import engine, override_get_db
 
-import sys
 sys.path.append("..")
 models.Base.metadata.create_all(bind=engine)
 

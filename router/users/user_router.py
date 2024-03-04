@@ -9,7 +9,7 @@ from ...auth import auth
 
 from ...data.schemas import user_schemas
 
-from ... import database
+from ...config import db_config
 
 
 router = APIRouter(
@@ -22,7 +22,7 @@ router = APIRouter(
     response_model=user_schemas.User
     )
 def register(user: user_schemas.UserCreate,
-             db: Session = Depends(database.get_db)):
+             db: Session = Depends(db_config.get_db)):
     try:
         db_user = user_crud.create_user(db, user)
         return db_user
@@ -35,7 +35,7 @@ def register(user: user_schemas.UserCreate,
     response_model=user_schemas.Token
     )
 async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-                db: Session = Depends(database.get_db)):
+                db: Session = Depends(db_config.get_db)):
     try:
         user_auth = user_schemas.UserAuth(email=form_data.username,
                                           password=form_data.password)
